@@ -25,14 +25,49 @@
       text-align: center;
       color: #6c7086;
       font-size: 0.8rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
 
-    /* 圖例 */
+    /* 搜尋框 */
+    .search-bar {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .search-bar input {
+      width: 320px;
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      border: 1px solid #45475a;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-bar input::placeholder { color: #6c7086; }
+    .search-bar input:focus {
+      border-color: #89dceb;
+      box-shadow: 0 0 0 3px rgba(137,220,235,0.15);
+    }
+    .search-bar .clear-btn {
+      margin-left: -2rem;
+      background: none;
+      border: none;
+      color: #6c7086;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 0 0.4rem;
+      display: none;
+    }
+    .search-bar .clear-btn:hover { color: #cdd6f4; }
+
+    /* 圖例 / 篩選器 */
     .legend {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
+      gap: 0.4rem;
       justify-content: center;
       margin-bottom: 1.2rem;
     }
@@ -42,13 +77,23 @@
       gap: 0.35rem;
       font-size: 0.72rem;
       color: #a6adc8;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 0.2s, border-color 0.2s, background 0.2s;
     }
+    .legend-item:hover { border-color: rgba(255,255,255,0.3); }
+    .legend-item.active { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.07); }
+    .legend-item.inactive { opacity: 0.35; }
     .legend-dot {
-      width: 12px; height: 12px;
+      width: 10px; height: 10px;
       border-radius: 3px;
+      flex-shrink: 0;
     }
 
-    /* 週期表格 */
+    /* 週期表 */
     #periodic-table {
       display: grid;
       grid-template-columns: repeat(18, minmax(58px, 1fr));
@@ -63,9 +108,9 @@
       text-align: center;
       cursor: pointer;
       border: 1px solid rgba(255,255,255,0.08);
-      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, opacity 0.2s;
       position: relative;
-      min-height: 62px;
+      min-height: 64px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -76,10 +121,25 @@
       border-color: rgba(255,255,255,0.5);
       box-shadow: 0 4px 20px rgba(0,0,0,0.6);
     }
+    .element.dimmed { opacity: 0.12; pointer-events: none; }
+    .element.highlighted { outline: 2px solid #f9e2af; z-index: 5; }
+
+    .element .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 0 2px;
+    }
     .element .num {
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       color: rgba(255,255,255,0.6);
       line-height: 1;
+    }
+    .element .state-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 1px;
     }
     .element .sym {
       font-size: 1.15rem;
@@ -93,18 +153,20 @@
       line-height: 1.2;
     }
     .element .wt {
-      font-size: 0.55rem;
-      color: rgba(255,255,255,0.5);
+      font-size: 0.52rem;
+      color: rgba(255,255,255,0.45);
       line-height: 1;
     }
-    .empty { background: transparent; border: none; }
+    .empty { background: transparent !important; border: none !important; }
+    .empty:hover { transform: none !important; box-shadow: none !important; }
     .period-label {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: #6c7086;
       font-weight: bold;
+      min-height: 64px;
     }
 
     /* 詳細資訊面板 */
@@ -114,30 +176,59 @@
       right: 1.5rem;
       background: #1e1e2e;
       border: 1px solid #45475a;
-      border-radius: 12px;
-      padding: 1rem 1.2rem;
-      min-width: 220px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      border-radius: 14px;
+      padding: 1.1rem 1.3rem;
+      min-width: 250px;
+      max-width: 300px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
       display: none;
-      z-index: 100;
+      z-index: 200;
     }
-    #info-panel .ip-sym {
-      font-size: 2.5rem;
-      font-weight: 900;
-      line-height: 1;
+    .ip-header { display: flex; align-items: flex-end; gap: 0.7rem; margin-bottom: 0.8rem; }
+    .ip-sym { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+    .ip-header-right {}
+    .ip-zh  { font-size: 1.1rem; font-weight: 600; color: #cdd6f4; }
+    .ip-en  { font-size: 0.78rem; color: #6c7086; margin-top: 1px; }
+    .ip-num { font-size: 0.72rem; color: #6c7086; }
+
+    .ip-divider { border: none; border-top: 1px solid #313244; margin: 0.6rem 0; }
+
+    .ip-table { width: 100%; font-size: 0.78rem; border-collapse: collapse; }
+    .ip-table td { padding: 3px 2px; vertical-align: top; }
+    .ip-table td:first-child { color: #6c7086; width: 38%; white-space: nowrap; }
+    .ip-table td:last-child  { color: #cdd6f4; }
+
+    .ip-state {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
     }
-    #info-panel .ip-name {
-      font-size: 1rem;
-      color: #a6adc8;
-      margin: 0.2rem 0 0.8rem;
+    .ip-uses { color: #a6adc8 !important; font-size: 0.75rem; line-height: 1.5; }
+    .ip-econfig { font-family: 'Consolas', monospace; font-size: 0.75rem; color: #89b4fa !important; }
+
+    .ip-close {
+      position: absolute;
+      top: 0.6rem; right: 0.8rem;
+      background: none; border: none;
+      color: #6c7086; cursor: pointer;
+      font-size: 1.1rem; line-height: 1;
     }
-    #info-panel table { width: 100%; font-size: 0.8rem; }
-    #info-panel td { padding: 2px 4px; color: #cdd6f4; }
-    #info-panel td:first-child { color: #6c7086; width: 60%; }
+    .ip-close:hover { color: #cdd6f4; }
+
+    /* 搜尋結果提示 */
+    #search-hint {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #6c7086;
+      margin-top: 0.6rem;
+      min-height: 1rem;
+    }
 
     .status-bar {
       text-align: center;
-      margin-top: 1.2rem;
+      margin-top: 1rem;
       font-size: 0.75rem;
       color: #6c7086;
     }
@@ -147,30 +238,35 @@
 <body onload="brython()">
 
   <h1>⚗️ 元素週期表</h1>
-  <p class="subtitle">118 種元素 · 點擊查看詳細資訊 · Brython 3.12</p>
+  <p class="subtitle">118 種元素 · 點擊查看詳細資訊</p>
+
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="搜尋元素（符號、中文名、英文名）...">
+    <button class="clear-btn" id="clear-btn" title="清除">✕</button>
+  </div>
 
   <div class="legend" id="legend"></div>
+  <div id="search-hint"></div>
   <div id="periodic-table"></div>
   <div class="status-bar" id="status">⏳ 載入中...</div>
   <div id="info-panel"></div>
 
 <script type="text/python">
-from browser import document, html
+from browser import document, html, bind
 
-# 類別顏色
+# ── 類別設定 ──────────────────────────────────────────────
 CATEGORY_COLORS = {
-    "alkali":      "#c0392b",   # 鹼金屬
-    "alkaline":    "#e67e22",   # 鹼土金屬
-    "transition":  "#2980b9",   # 過渡金屬
-    "post":        "#27ae60",   # 後過渡金屬
-    "metalloid":   "#16a085",   # 類金屬
-    "nonmetal":    "#8e44ad",   # 非金屬
-    "halogen":     "#6c3483",   # 鹵素
-    "noble":       "#1a5276",   # 惰性氣體
-    "lanthanide":  "#117a65",   # 鑭系元素
-    "actinide":    "#6e2f1a",   # 錒系元素
+    "alkali":     "#c0392b",
+    "alkaline":   "#e67e22",
+    "transition": "#2980b9",
+    "post":       "#27ae60",
+    "metalloid":  "#16a085",
+    "nonmetal":   "#8e44ad",
+    "halogen":    "#6c3483",
+    "noble":      "#1a5276",
+    "lanthanide": "#117a65",
+    "actinide":   "#6e2f1a",
 }
-
 CATEGORY_ZH = {
     "alkali":     "鹼金屬",
     "alkaline":   "鹼土金屬",
@@ -183,8 +279,20 @@ CATEGORY_ZH = {
     "lanthanide": "鑭系元素",
     "actinide":   "錒系元素",
 }
+STATE_COLORS = {
+    "solid":     "#a6adc8",
+    "liquid":    "#89b4fa",
+    "gas":       "#a6e3a1",
+    "synthetic": "#fab387",
+}
+STATE_ZH = {
+    "solid":     "固態",
+    "liquid":    "液態",
+    "gas":       "氣態",
+    "synthetic": "人工合成",
+}
 
-# (原子序, 符號, 中文名, 英文名, 原子量, 類別, 週期, 族)
+# ── 元素資料 (原子序, 符號, 中文, 英文, 原子量, 類別, 週期, 族) ──
 ELEMENTS = [
     (1,  "H",  "氫",  "Hydrogen",      1.008,   "nonmetal",   1, 1),
     (2,  "He", "氦",  "Helium",        4.003,   "noble",      1, 18),
@@ -261,11 +369,11 @@ ELEMENTS = [
     (87, "Fr", "鍅",  "Francium",    223.000,   "alkali",     7, 1),
     (88, "Ra", "鐳",  "Radium",      226.000,   "alkaline",   7, 2),
     (89, "Ac", "錒",  "Actinium",    227.000,   "actinide",   7, 3),
-    (104,"Rf", "𨧀", "Rutherfordium",267.000,  "transition", 7, 4),
-    (105,"Db", "𨧁", "Dubnium",     268.000,   "transition", 7, 5),
+    (104,"Rf", "鑪",  "Rutherfordium",267.000,  "transition", 7, 4),
+    (105,"Db", "𨧀", "Dubnium",     268.000,   "transition", 7, 5),
     (106,"Sg", "𨭎", "Seaborgium",  271.000,   "transition", 7, 6),
     (107,"Bh", "𨨏", "Bohrium",     270.000,   "transition", 7, 7),
-    (108,"Hs", "鏷",  "Hassium",     277.000,   "transition", 7, 8),
+    (108,"Hs", "鎚",  "Hassium",     277.000,   "transition", 7, 8),
     (118,"Og", "鿫",  "Oganesson",   294.000,   "noble",      7, 18),
     # 鑭系
     (58, "Ce", "鈰",  "Cerium",      140.116,   "lanthanide", 9, 4),
@@ -299,82 +407,304 @@ ELEMENTS = [
     (103,"Lr", "鐒",  "Lawrencium",  266.000,   "actinide",   10, 17),
 ]
 
-# 建立格子 dict：(row, col) -> element
+# ── 額外資料 (state, electron_config, uses) ────────────────
+EXTRA = {
+    1:  ("gas",       "1s¹",                       "燃料電池、火箭燃料、氫能源"),
+    2:  ("gas",       "1s²",                       "氣球、冷卻劑、雷射"),
+    3:  ("solid",     "[He] 2s¹",                  "鋰電池、玻璃、精神科藥物"),
+    4:  ("solid",     "[He] 2s²",                  "航太合金、X光窗、核反應爐"),
+    5:  ("solid",     "[He] 2s² 2p¹",              "玻璃纖維、半導體摻雜"),
+    6:  ("solid",     "[He] 2s² 2p²",              "鑽石、石墨、有機化合物"),
+    7:  ("gas",       "[He] 2s² 2p³",              "化肥、炸藥、食品保鮮"),
+    8:  ("gas",       "[He] 2s² 2p⁴",              "呼吸、燃燒、醫療用氧"),
+    9:  ("gas",       "[He] 2s² 2p⁵",              "牙膏氟化物、特氟龍"),
+    10: ("gas",       "[He] 2s² 2p⁶",              "霓虹燈、雷射"),
+    11: ("solid",     "[Ne] 3s¹",                  "食鹽原料、路燈"),
+    12: ("solid",     "[Ne] 3s²",                  "輕量合金、煙火"),
+    13: ("solid",     "[Ne] 3s² 3p¹",              "飛機機身、易開罐、建材"),
+    14: ("solid",     "[Ne] 3s² 3p²",              "半導體、太陽能板、玻璃"),
+    15: ("solid",     "[Ne] 3s² 3p³",              "化肥、火柴、農藥"),
+    16: ("solid",     "[Ne] 3s² 3p⁴",              "硫酸、橡膠硫化、火藥"),
+    17: ("gas",       "[Ne] 3s² 3p⁵",              "消毒水、PVC塑膠、漂白劑"),
+    18: ("gas",       "[Ne] 3s² 3p⁶",              "焊接保護氣、白熾燈"),
+    19: ("solid",     "[Ar] 4s¹",                  "化肥、肥皂、玻璃"),
+    20: ("solid",     "[Ar] 4s²",                  "骨骼牙齒、水泥、石灰"),
+    21: ("solid",     "[Ar] 3d¹ 4s²",              "航太合金、運動器材"),
+    22: ("solid",     "[Ar] 3d² 4s²",              "飛機引擎、骨科植入物"),
+    23: ("solid",     "[Ar] 3d³ 4s²",              "鋼鐵強化、催化劑"),
+    24: ("solid",     "[Ar] 3d⁵ 4s¹",              "不銹鋼、電鍍、顏料"),
+    25: ("solid",     "[Ar] 3d⁵ 4s²",              "鋼鐵製造、電池"),
+    26: ("solid",     "[Ar] 3d⁶ 4s²",              "建築、機械、血紅素"),
+    27: ("solid",     "[Ar] 3d⁷ 4s²",              "磁石、電池、超合金"),
+    28: ("solid",     "[Ar] 3d⁸ 4s²",              "不銹鋼、電池、硬幣"),
+    29: ("solid",     "[Ar] 3d¹⁰ 4s¹",             "電線、電路板、銅管"),
+    30: ("solid",     "[Ar] 3d¹⁰ 4s²",             "鍍鋅鋼鐵、電池、油漆"),
+    31: ("solid",     "[Ar] 3d¹⁰ 4s² 4p¹",         "半導體、LED、太陽能"),
+    32: ("solid",     "[Ar] 3d¹⁰ 4s² 4p²",         "半導體、光纖、紅外線"),
+    33: ("solid",     "[Ar] 3d¹⁰ 4s² 4p³",         "半導體摻雜、木材防腐"),
+    34: ("solid",     "[Ar] 3d¹⁰ 4s² 4p⁴",         "玻璃著色、光電池"),
+    35: ("liquid",    "[Ar] 3d¹⁰ 4s² 4p⁵",         "阻燃劑、藥物、照相"),
+    36: ("gas",       "[Ar] 3d¹⁰ 4s² 4p⁶",         "氪燈、雷射、絕熱"),
+    37: ("solid",     "[Kr] 5s¹",                  "原子鐘、光電元件"),
+    38: ("solid",     "[Kr] 5s²",                  "煙火紅色、核醫學"),
+    39: ("solid",     "[Kr] 4d¹ 5s²",              "超導體、雷射、合金"),
+    40: ("solid",     "[Kr] 4d² 5s²",              "核反應爐、陶瓷、手術刀"),
+    41: ("solid",     "[Kr] 4d⁴ 5s¹",              "超導磁鐵、噴射引擎"),
+    42: ("solid",     "[Kr] 4d⁵ 5s¹",              "鋼鐵合金、催化劑、潤滑"),
+    43: ("synthetic", "[Kr] 4d⁵ 5s²",              "核醫掃描 (Tc-99m)"),
+    44: ("solid",     "[Kr] 4d⁷ 5s¹",              "催化劑、電極、合金"),
+    45: ("solid",     "[Kr] 4d⁸ 5s¹",              "催化劑、汽車觸媒"),
+    46: ("solid",     "[Kr] 4d¹⁰",                 "催化劑、氫儲存、電子"),
+    47: ("solid",     "[Kr] 4d¹⁰ 5s¹",             "珠寶、電子、攝影"),
+    48: ("solid",     "[Kr] 4d¹⁰ 5s²",             "太陽能板、電池、顏料"),
+    49: ("solid",     "[Kr] 4d¹⁰ 5s² 5p¹",         "LCD螢幕、半導體"),
+    50: ("solid",     "[Kr] 4d¹⁰ 5s² 5p²",         "焊錫、青銅、鍍錫"),
+    51: ("solid",     "[Kr] 4d¹⁰ 5s² 5p³",         "阻燃劑、半導體、合金"),
+    52: ("solid",     "[Kr] 4d¹⁰ 5s² 5p⁴",         "太陽能板、半導體"),
+    53: ("solid",     "[Kr] 4d¹⁰ 5s² 5p⁵",         "消毒劑、甲狀腺藥物"),
+    54: ("gas",       "[Kr] 4d¹⁰ 5s² 5p⁶",         "麻醉劑、離子推進器"),
+    55: ("solid",     "[Xe] 6s¹",                  "原子鐘、光電管"),
+    56: ("solid",     "[Xe] 6s²",                  "X光造影、鑽井液"),
+    57: ("solid",     "[Xe] 5d¹ 6s²",              "光學玻璃、攝影機鏡頭"),
+    58: ("solid",     "[Xe] 4f¹ 5d¹ 6s²",          "催化劑、玻璃拋光"),
+    59: ("solid",     "[Xe] 4f³ 6s²",              "強力磁鐵、雷射"),
+    60: ("solid",     "[Xe] 4f⁴ 6s²",              "強力磁鐵、電動車馬達"),
+    61: ("synthetic", "[Xe] 4f⁵ 6s²",              "核電池、螢光塗料"),
+    62: ("solid",     "[Xe] 4f⁶ 6s²",              "核反應爐控制棒"),
+    63: ("solid",     "[Xe] 4f⁷ 6s²",              "彩色電視紅色磷光體"),
+    64: ("solid",     "[Xe] 4f⁷ 5d¹ 6s²",          "MRI造影劑、雷射"),
+    65: ("solid",     "[Xe] 4f⁹ 6s²",              "X光磷光體、固態雷射"),
+    66: ("solid",     "[Xe] 4f¹⁰ 6s²",             "強力磁鐵、核反應爐"),
+    67: ("solid",     "[Xe] 4f¹¹ 6s²",             "磁性材料"),
+    68: ("solid",     "[Xe] 4f¹² 6s²",             "玻璃著色、雷射"),
+    69: ("solid",     "[Xe] 4f¹³ 6s²",             "攜帶式X光機"),
+    70: ("solid",     "[Xe] 4f¹⁴ 6s²",             "雷射、合金"),
+    71: ("solid",     "[Xe] 4f¹⁴ 5d¹ 6s²",         "PET掃描、催化劑"),
+    72: ("solid",     "[Xe] 4f¹⁴ 5d² 6s²",         "核控制棒、電子管"),
+    73: ("solid",     "[Xe] 4f¹⁴ 5d³ 6s²",         "電容器、外科手術器械"),
+    74: ("solid",     "[Xe] 4f¹⁴ 5d⁴ 6s²",         "燈絲、X光管"),
+    75: ("solid",     "[Xe] 4f¹⁴ 5d⁵ 6s²",         "高溫合金、電極"),
+    76: ("solid",     "[Xe] 4f¹⁴ 5d⁶ 6s²",         "鋼筆尖、電觸點"),
+    77: ("solid",     "[Xe] 4f¹⁴ 5d⁷ 6s²",         "火星塞、催化劑"),
+    78: ("solid",     "[Xe] 4f¹⁴ 5d⁹ 6s¹",         "珠寶、催化劑、化療"),
+    79: ("solid",     "[Xe] 4f¹⁴ 5d¹⁰ 6s¹",        "珠寶、電子、牙科"),
+    80: ("liquid",    "[Xe] 4f¹⁴ 5d¹⁰ 6s²",        "溫度計、採礦"),
+    81: ("solid",     "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹",    "紅外線偵測器"),
+    82: ("solid",     "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²",    "電池、防輻射、焊料"),
+    83: ("solid",     "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³",    "胃藥、低熔點合金"),
+    84: ("synthetic", "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴",    "中子源、抗靜電"),
+    85: ("synthetic", "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵",    "癌症治療（研究中）"),
+    86: ("gas",       "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶",    "放射治療、地質測年"),
+    87: ("synthetic", "[Rn] 7s¹",                  "研究用（極稀少）"),
+    88: ("synthetic", "[Rn] 7s²",                  "放射治療（歷史用途）"),
+    89: ("synthetic", "[Rn] 6d¹ 7s²",              "癌症治療"),
+    90: ("solid",     "[Rn] 6d² 7s²",              "核燃料、鎢絲強化"),
+    91: ("solid",     "[Rn] 5f² 6d¹ 7s²",          "核研究"),
+    92: ("solid",     "[Rn] 5f³ 6d¹ 7s²",          "核燃料、核武器"),
+    93: ("synthetic", "[Rn] 5f⁴ 6d¹ 7s²",          "核反應爐"),
+    94: ("synthetic", "[Rn] 5f⁶ 7s²",              "核武器、核電廠"),
+    95: ("synthetic", "[Rn] 5f⁷ 7s²",              "煙霧偵測器"),
+    96: ("synthetic", "[Rn] 5f⁷ 6d¹ 7s²",          "核電池（太空探測器）"),
+    97: ("synthetic", "[Rn] 5f⁹ 7s²",              "研究用"),
+    98: ("synthetic", "[Rn] 5f¹⁰ 7s²",             "中子源、癌症治療"),
+    99: ("synthetic", "[Rn] 5f¹¹ 7s²",             "研究用"),
+    100:("synthetic", "[Rn] 5f¹² 7s²",             "研究用"),
+    101:("synthetic", "[Rn] 5f¹³ 7s²",             "研究用"),
+    102:("synthetic", "[Rn] 5f¹⁴ 7s²",             "研究用"),
+    103:("synthetic", "[Rn] 5f¹⁴ 7s² 7p¹",         "研究用"),
+    104:("synthetic", "[Rn] 5f¹⁴ 6d² 7s²",         "研究用"),
+    105:("synthetic", "[Rn] 5f¹⁴ 6d³ 7s²",         "研究用"),
+    106:("synthetic", "[Rn] 5f¹⁴ 6d⁴ 7s²",         "研究用"),
+    107:("synthetic", "[Rn] 5f¹⁴ 6d⁵ 7s²",         "研究用"),
+    108:("synthetic", "[Rn] 5f¹⁴ 6d⁶ 7s²",         "研究用"),
+    118:("synthetic", "[Og]",                       "研究用"),
+}
+
+# ── 建立查找字典 ───────────────────────────────────────────
+elem_by_num = {e[0]: e for e in ELEMENTS}
 grid = {}
 for e in ELEMENTS:
-    num, sym, zh, en, wt, cat, period, group = e
-    row = period
-    col = group
-    grid[(row, col)] = e
+    grid[(e[6], e[7])] = e
 
-# 建立圖例
+# ── 狀態管理 ──────────────────────────────────────────────
+active_cats = set(CATEGORY_COLORS.keys())   # 所有類別都啟用
+element_divs = {}  # num -> div
+legend_items = {}  # cat -> legend div
+
+# ── 圖例 / 篩選器 ─────────────────────────────────────────
 legend_div = document["legend"]
 for cat, color in CATEGORY_COLORS.items():
-    item = html.DIV(Class="legend-item")
+    item = html.DIV(Class="legend-item active")
     dot = html.DIV(Class="legend-dot")
     dot.style.background = color
     item <= dot
     item <= html.SPAN(CATEGORY_ZH[cat])
+    legend_items[cat] = item
+
+    def toggle_cat(ev, c=cat):
+        if c in active_cats:
+            active_cats.discard(c)
+            legend_items[c].classList.remove("active")
+            legend_items[c].classList.add("inactive")
+        else:
+            active_cats.add(c)
+            legend_items[c].classList.add("active")
+            legend_items[c].classList.remove("inactive")
+        update_display()
+
+    item.bind("click", toggle_cat)
     legend_div <= item
 
-# 建立週期表
-table_div = document["periodic-table"]
+# ── 更新顯示（搜尋 + 篩選器合併） ────────────────────────
+def update_display():
+    query = document["search-input"].value.strip().lower()
+    matched = 0
+    for num, div in element_divs.items():
+        e = elem_by_num[num]
+        _, sym, zh, en, _, cat, _, _ = e
+        # 篩選器
+        cat_ok = cat in active_cats
+        # 搜尋
+        if query:
+            search_ok = (query in sym.lower() or
+                         query in zh.lower() or
+                         query in en.lower() or
+                         query == str(num))
+        else:
+            search_ok = True
 
-# 共 10 列（1-7 主表 + 空行 + 9-10 鑭錒系）
-# 用 CSS grid，row 1-7 正常，row 8 空，row 9-10 鑭錒系
-# 每列 18 格
+        if cat_ok and search_ok:
+            div.classList.remove("dimmed")
+            if query:
+                div.classList.add("highlighted")
+                matched += 1
+            else:
+                div.classList.remove("highlighted")
+        else:
+            div.classList.add("dimmed")
+            div.classList.remove("highlighted")
 
-# 格子填充函式
+    hint = document["search-hint"]
+    if query:
+        hint.text = f"找到 {matched} 個符合「{query}」的元素"
+        document["clear-btn"].style.display = "inline"
+    else:
+        hint.text = ""
+        document["clear-btn"].style.display = "none"
+
+# ── 搜尋事件 ─────────────────────────────────────────────
+search_input = document["search-input"]
+search_input.bind("input", lambda ev: update_display())
+
+clear_btn = document["clear-btn"]
+def clear_search(ev):
+    document["search-input"].value = ""
+    update_display()
+clear_btn.bind("click", clear_search)
+
+# ── 建立元素格子 ──────────────────────────────────────────
 def make_element_cell(e):
     num, sym, zh, en, wt, cat, period, group = e
     color = CATEGORY_COLORS[cat]
+    state, econfig, uses = EXTRA.get(num, ("solid", "—", "—"))
+
     div = html.DIV(Class="element")
     div.style.background = color + "cc"
     div.style.borderColor = color
 
-    n = html.DIV(str(num), Class="num")
-    s = html.DIV(sym, Class="sym")
-    z = html.DIV(zh, Class="zh")
-    w = html.DIV(f"{wt:.3f}", Class="wt")
-    div <= n
-    div <= s
-    div <= z
-    div <= w
+    # 頂列：原子序 + 狀態點
+    top = html.DIV(Class="top-row")
+    top <= html.SPAN(str(num), Class="num")
+    dot = html.SPAN(Class="state-dot")
+    dot.style.background = STATE_COLORS[state]
+    top <= dot
+    div <= top
 
-    # 點擊顯示詳細資訊
+    div <= html.DIV(sym, Class="sym")
+    div <= html.DIV(zh,  Class="zh")
+    div <= html.DIV(f"{wt:.3f}", Class="wt")
+
+    element_divs[num] = div
+
     def show_info(ev, elem=e):
         n2, s2, z2, e2, w2, c2, p2, g2 = elem
+        st, ec, us = EXTRA.get(n2, ("solid", "—", "—"))
         panel = document["info-panel"]
         panel.clear()
+
+        # 關閉按鈕
+        close = html.BUTTON("✕", Class="ip-close")
+        def close_panel(ev): panel.style.display = "none"
+        close.bind("click", close_panel)
+        panel <= close
+
+        # 標題列
+        header = html.DIV(Class="ip-header")
         sym_div = html.DIV(s2, Class="ip-sym")
         sym_div.style.color = CATEGORY_COLORS[c2]
-        panel <= sym_div
-        panel <= html.DIV(f"{z2} · {e2}", Class="ip-name")
-        t = html.TABLE()
-        rows_data = [
-            ("原子序", str(n2)),
-            ("原子量", f"{w2:.4f}"),
-            ("類別", CATEGORY_ZH[c2]),
-            ("週期", str(p2)),
-            ("族", str(g2)),
-        ]
-        for label, val in rows_data:
-            tr = html.TR()
-            tr <= html.TD(label)
-            tr <= html.TD(val)
-            t <= tr
+        header <= sym_div
+        right = html.DIV(Class="ip-header-right")
+        right <= html.DIV(f"{z2} {e2}", Class="ip-zh")
+        right <= html.DIV(CATEGORY_ZH[c2], Class="ip-en")
+        right <= html.DIV(f"原子序 {n2}", Class="ip-num")
+        header <= right
+        panel <= header
+        panel <= html.HR(Class="ip-divider")
+
+        # 資料表
+        t = html.TABLE(Class="ip-table")
+
+        # 狀態
+        tr = html.TR()
+        tr <= html.TD("常溫狀態")
+        state_span = html.SPAN(STATE_ZH[st], Class="ip-state")
+        state_span.style.background = STATE_COLORS[st] + "33"
+        state_span.style.color = STATE_COLORS[st]
+        td_val = html.TD()
+        td_val <= state_span
+        tr <= td_val
+        t <= tr
+
+        # 原子量
+        tr2 = html.TR()
+        tr2 <= html.TD("原子量")
+        tr2 <= html.TD(f"{w2:.4f} u")
+        t <= tr2
+
+        # 週期 / 族
+        tr3 = html.TR()
+        tr3 <= html.TD("週期 / 族")
+        tr3 <= html.TD(f"第 {p2} 週期 · 第 {g2} 族")
+        t <= tr3
+
+        # 電子組態
+        tr4 = html.TR()
+        tr4 <= html.TD("電子組態")
+        td_ec = html.TD(ec, Class="ip-econfig")
+        tr4 <= td_ec
+        t <= tr4
+
+        # 主要用途
+        tr5 = html.TR()
+        tr5 <= html.TD("主要用途")
+        td_us = html.TD(us, Class="ip-uses")
+        tr5 <= td_us
+        t <= tr5
+
         panel <= t
         panel.style.display = "block"
         panel.style.borderColor = CATEGORY_COLORS[c2]
+        ev.stopPropagation()
 
     div.bind("click", show_info)
     return div
 
 def make_empty():
-    d = html.DIV(Class="element empty")
-    return d
+    return html.DIV(Class="element empty")
 
-# 渲染主表 row 1-7
+# ── 渲染週期表 ─────────────────────────────────────────────
+table_div = document["periodic-table"]
+
 for row in range(1, 8):
     for col in range(1, 19):
         if (row, col) in grid:
@@ -382,53 +712,34 @@ for row in range(1, 8):
         else:
             table_div <= make_empty()
 
-# 空白分隔列
 for col in range(1, 19):
     table_div <= make_empty()
 
-# 鑭系標籤列 (row 9)
-for col in range(1, 19):
-    if col == 1:
-        lbl = html.DIV("鑭系", Class="element period-label")
-        lbl.style.color = CATEGORY_COLORS["lanthanide"]
-        lbl.style.fontSize = "0.7rem"
-        table_div <= lbl
-    elif col == 2:
-        table_div <= make_empty()
-    elif col == 3:
-        table_div <= make_empty()
-    elif (9, col) in grid:
-        table_div <= make_element_cell(grid[(9, col)])
-    else:
-        table_div <= make_empty()
+for row, cat_key in [(9, "lanthanide"), (10, "actinide")]:
+    for col in range(1, 19):
+        if col == 1:
+            lbl = html.DIV(CATEGORY_ZH[cat_key][:2], Class="element period-label")
+            lbl.style.color = CATEGORY_COLORS[cat_key]
+            lbl.style.fontSize = "0.7rem"
+            table_div <= lbl
+        elif col in (2, 3):
+            table_div <= make_empty()
+        elif (row, col) in grid:
+            table_div <= make_element_cell(grid[(row, col)])
+        else:
+            table_div <= make_empty()
 
-# 錒系標籤列 (row 10)
-for col in range(1, 19):
-    if col == 1:
-        lbl = html.DIV("錒系", Class="element period-label")
-        lbl.style.color = CATEGORY_COLORS["actinide"]
-        lbl.style.fontSize = "0.7rem"
-        table_div <= lbl
-    elif col == 2:
-        table_div <= make_empty()
-    elif col == 3:
-        table_div <= make_empty()
-    elif (10, col) in grid:
-        table_div <= make_element_cell(grid[(10, col)])
-    else:
-        table_div <= make_empty()
-
-# 關閉面板
-def close_panel(ev):
+# ── 點擊空白處關閉面板 ────────────────────────────────────
+def doc_click(ev):
     panel = document["info-panel"]
-    if ev.target.closest("#info-panel") is None and not ev.target.classList.contains("element"):
+    if panel.style.display == "block":
         panel.style.display = "none"
 
-document.bind("click", close_panel)
+document.bind("click", doc_click)
 
-# 完成
+# ── 完成 ──────────────────────────────────────────────────
 status = document["status"]
-status.text = f"✓ 共 {len(ELEMENTS)} 種元素 · 點擊元素查看詳細資訊 · Brython 3.12"
+status.text = f"✓ 共 {len(ELEMENTS)} 種元素 · 點擊元素查看詳細資訊 · 點擊圖例篩選類別"
 status.className = "status-bar done"
 </script>
 
