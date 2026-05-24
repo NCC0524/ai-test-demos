@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nasdaq 100 自動交易投資組合</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:       #0d0d1a;
+    --surface:  #161625;
+    --surface2: #1e1e35;
+    --border:   #2a2a4a;
+    --text:     #cdd6f4;
+    --muted:    #6c7086;
+    --green:    #a6e3a1;
+    --red:      #f38ba8;
+    --blue:     #89b4fa;
+    --yellow:   #f9e2af;
+    --purple:   #cba6f7;
+    --cyan:     #89dceb;
+    --orange:   #fab387;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── Topbar ── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.8rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar h1 { font-size: 1.1rem; color: var(--cyan); display: flex; align-items: center; gap: 0.5rem; }
+  .topbar-right { display: flex; align-items: center; gap: 0.8rem; font-size: 0.78rem; color: var(--muted); }
+  .btn {
+    padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 0.78rem;
+    cursor: pointer; transition: background 0.15s, border-color 0.15s;
+  }
+  .btn:hover { background: var(--border); border-color: var(--blue); }
+  .btn-green { border-color: var(--green); color: var(--green); }
+  .btn-green:hover { background: #a6e3a120; }
+  #status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── Layout ── */
+  .main { padding: 1.2rem 1.5rem; max-width: 1600px; margin: 0 auto; }
+
+  /* ── KPI Cards ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.2rem; }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.2rem;
+  }
+  .kpi-card .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+  .kpi-card .value { font-size: 1.7rem; font-weight: 700; line-height: 1; }
+  .kpi-card .sub   { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; }
+  .positive { color: var(--green); }
+  .negative { color: var(--red); }
+  .neutral  { color: var(--text); }
+
+  /* ── Section ── */
+  .section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 1.2rem; overflow: hidden;
+  }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.7rem 1.2rem;
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+    font-size: 0.82rem; font-weight: 600; color: var(--cyan);
+  }
+  .section-header span { font-size: 0.72rem; color: var(--muted); font-weight: 400; }
+  .section-body { padding: 1rem 1.2rem; }
+
+  /* ── Charts row ── */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.2rem; }
+  .chart-wrap { position: relative; height: 260px; }
+
+  /* ── Table ── */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  th { background: var(--surface2); color: var(--muted); padding: 7px 10px; text-align: right; font-weight: 600; font-size: 0.72rem; white-space: nowrap; }
+  th:first-child { text-align: left; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+  td:first-child { text-align: left; font-weight: 600; color: var(--blue); }
+  tr:hover td { background: var(--surface2); }
+  .tag {
+    display: inline-block; padding: 1px 7px; border-radius: 999px;
+    font-size: 0.68rem; font-weight: 700;
+  }
+  .tag-buy  { background: #a6e3a120; color: var(--green); }
+  .tag-sell { background: #f38ba820; color: var(--red); }
+  .tag-ok   { background: #89b4fa20; color: var(--blue); }
+  .tag-pend { background: #f9e2af20; color: var(--yellow); }
+
+  /* ── Bottom row ── */
+  .bottom-row { display: grid; grid-template-columns: 1fr 1.6fr; gap: 1.2rem; }
+
+  /* ── Rank bars ── */
+  .rank-chart { height: 260px; position: relative; }
+
+  /* ── Loading ── */
+  #loading {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 999; gap: 1rem;
+  }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border);
+    border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading p { color: var(--muted); font-size: 0.85rem; }
+
+  /* ── Progress bar (weight) ── */
+  .w-bar { display: flex; align-items: center; gap: 6px; }
+  .w-bar-bg { flex: 1; height: 5px; background: var(--border); border-radius: 3px; min-width: 60px; }
+  .w-bar-fill { height: 5px; border-radius: 3px; background: var(--blue); transition: width 0.3s; }
+  .w-num { font-size: 0.75rem; color: var(--text); min-width: 38px; text-align: right; }
+
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-row, .bottom-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>連接 Alpaca 取得投資組合資料...</p>
+</div>
+
+<!-- Topbar -->
+<div class="topbar">
+  <h1>🏦 Nasdaq 100 Top 10 自動交易投資組合</h1>
+  <div class="topbar-right">
+    <div id="status-dot"></div>
+    <span id="last-update">—</span>
+    <button class="btn" onclick="refreshData()">🔄 更新</button>
+    <button class="btn btn-green" onclick="triggerRebalance()">⚖️ 再平衡</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="label">💰 NAV 淨值</div>
+      <div class="value neutral" id="kpi-nav">—</div>
+      <div class="sub" id="kpi-nav-sub">起始 NAV —</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">📅 當日損益</div>
+      <div class="value" id="kpi-daily-pnl">—</div>
+      <div class="sub" id="kpi-daily-pct">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">📈 投資期間總報酬率</div>
+      <div class="value" id="kpi-total-ret">—</div>
+      <div class="sub" id="kpi-days">投資 — 天</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">🗓 年化收益率</div>
+      <div class="value" id="kpi-annual-ret">—</div>
+      <div class="sub">年化複利報酬率</div>
+    </div>
+  </div>
+
+  <!-- NAV + Comparison Charts -->
+  <div class="charts-row">
+    <div class="section">
+      <div class="section-header">📊 NAV 淨值走勢 <span id="nav-chart-period">—</span></div>
+      <div class="section-body">
+        <div class="chart-wrap"><canvas id="navChart"></canvas></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">🆚 回測對比走勢 <span>本組合 vs QQQ vs SPY（以起始NAV正規化）</span></div>
+      <div class="section-body">
+        <div class="chart-wrap"><canvas id="cmpChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Positions Table -->
+  <div class="section" style="margin-bottom:1.2rem">
+    <div class="section-header">📋 每日持倉情況 <span id="pos-count">—</span></div>
+    <div class="section-body tbl-wrap">
+      <table id="pos-table">
+        <thead>
+          <tr>
+            <th>股票</th>
+            <th>實時股價</th>
+            <th>買進均價</th>
+            <th>持倉數量</th>
+            <th>市值</th>
+            <th>持倉權重</th>
+            <th>目標權重</th>
+            <th>損益金額</th>
+            <th>損益%</th>
+          </tr>
+        </thead>
+        <tbody id="pos-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Ranking + Trade Log -->
+  <div class="bottom-row">
+    <div class="section">
+      <div class="section-header">🏆 科技類股市值排名</div>
+      <div class="section-body">
+        <div class="rank-chart"><canvas id="rankChart"></canvas></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">📜 交易日誌 <span id="trade-count">—</span></div>
+      <div class="section-body tbl-wrap" style="max-height:300px;overflow-y:auto">
+        <table id="trade-table">
+          <thead>
+            <tr>
+              <th style="text-align:left">時間</th>
+              <th style="text-align:left">股票</th>
+              <th style="text-align:left">方向</th>
+              <th>委託量</th>
+              <th>成交量</th>
+              <th>成交均價</th>
+              <th style="text-align:left">狀態</th>
+            </tr>
+          </thead>
+          <tbody id="trade-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ── Chart 實例 ─────────────────────────────────────────────────────
+let navChart = null, cmpChart = null, rankChart = null;
+let refreshTimer = null;
+
+const COLORS = {
+  portfolio: '#89dceb',
+  QQQ:       '#cba6f7',
+  SPY:       '#fab387',
+  grid:      'rgba(255,255,255,0.05)',
+  tick:      '#6c7086',
+};
+
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { labels: { color: '#a6adc8', font: { size: 11 }, boxWidth: 12 } },
+    tooltip: {
+      backgroundColor: '#1e1e35',
+      borderColor: '#2a2a4a',
+      borderWidth: 1,
+      titleColor: '#cdd6f4',
+      bodyColor: '#a6adc8',
+    },
+  },
+  scales: {
+    x: { ticks: { color: COLORS.tick, maxTicksLimit: 8, font: { size: 10 } }, grid: { color: COLORS.grid } },
+    y: { ticks: { color: COLORS.tick, font: { size: 10 } }, grid: { color: COLORS.grid } },
+  },
+};
+
+// ── 格式化工具 ─────────────────────────────────────────────────────
+const fmt  = v => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(v);
+const fmtN = (v, d=2) => Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const sign = v => v >= 0 ? '+' : '';
+const cls  = v => v >= 0 ? 'positive' : 'negative';
+
+// ── 更新 KPI ──────────────────────────────────────────────────────
+function updateKPIs(snap) {
+  if (!snap || !snap.nav) return;
+
+  // NAV
+  document.getElementById('kpi-nav').textContent = fmt(snap.nav);
+  document.getElementById('kpi-nav').className   = 'value neutral';
+  document.getElementById('kpi-nav-sub').textContent =
+    `起始 NAV ${fmt(snap.inception_nav || 100000)}`;
+
+  // Daily P&L
+  const dp = snap.daily_pnl || 0;
+  const dpPct = snap.daily_pnl_pct || 0;
+  document.getElementById('kpi-daily-pnl').textContent = `${sign(dp)}${fmt(dp)}`;
+  document.getElementById('kpi-daily-pnl').className   = `value ${cls(dp)}`;
+  document.getElementById('kpi-daily-pct').textContent = `${sign(dpPct)}${fmtN(dpPct)}%`;
+
+  // Total return
+  const tr = snap.total_return_pct || 0;
+  document.getElementById('kpi-total-ret').textContent = `${sign(tr)}${fmtN(tr, 2)}%`;
+  document.getElementById('kpi-total-ret').className   = `value ${cls(tr)}`;
+  document.getElementById('kpi-days').textContent      = `投資 ${snap.days_elapsed || 0} 天`;
+
+  // Annual return
+  const ar = snap.annual_return_pct || 0;
+  document.getElementById('kpi-annual-ret').textContent = `${sign(ar)}${fmtN(ar, 2)}%`;
+  document.getElementById('kpi-annual-ret').className   = `value ${cls(ar)}`;
+}
+
+// ── NAV 走勢圖 ────────────────────────────────────────────────────
+function updateNavChart(navHistory) {
+  if (!navHistory || !navHistory.length) return;
+
+  const labels = navHistory.map(d => d.date);
+  const values = navHistory.map(d => d.nav);
+
+  document.getElementById('nav-chart-period').textContent =
+    `${labels[0]} ~ ${labels[labels.length - 1]}`;
+
+  const dataset = {
+    label: 'NAV',
+    data:  values,
+    borderColor:     COLORS.portfolio,
+    backgroundColor: 'rgba(137,220,235,0.08)',
+    borderWidth: 2,
+    fill: true,
+    tension: 0.3,
+    pointRadius: labels.length <= 30 ? 3 : 0,
+    pointHoverRadius: 5,
+  };
+
+  if (navChart) {
+    navChart.data.labels   = labels;
+    navChart.data.datasets = [dataset];
+    navChart.update('none');
+  } else {
+    const cfg = JSON.parse(JSON.stringify(CHART_DEFAULTS));
+    cfg.scales.y.ticks.callback = v => '$' + (v/1000).toFixed(0) + 'k';
+    navChart = new Chart(document.getElementById('navChart'), {
+      type: 'line', data: { labels, datasets: [dataset] }, options: cfg,
+    });
+  }
+}
+
+// ── 對比圖 ────────────────────────────────────────────────────────
+function updateCmpChart(navHistory, benchmark) {
+  if (!navHistory || !navHistory.length) return;
+
+  const portfolioDs = {
+    label: '本投資組合',
+    data:  navHistory.map(d => ({ x: d.date, y: d.nav })),
+    borderColor:     COLORS.portfolio,
+    backgroundColor: 'transparent',
+    borderWidth: 2.5, tension: 0.3,
+    pointRadius: 0, pointHoverRadius: 5,
+  };
+
+  const datasets = [portfolioDs];
+  const bColors = { QQQ: COLORS.QQQ, SPY: COLORS.SPY };
+
+  for (const [sym, bars] of Object.entries(benchmark || {})) {
+    datasets.push({
+      label: sym,
+      data:  bars.map(b => ({ x: b.date, y: b.value })),
+      borderColor:     bColors[sym] || '#aaa',
+      backgroundColor: 'transparent',
+      borderWidth: 1.5, tension: 0.3,
+      borderDash: [4, 3],
+      pointRadius: 0, pointHoverRadius: 4,
+    });
+  }
+
+  const allDates = [...new Set([
+    ...navHistory.map(d => d.date),
+    ...Object.values(benchmark || {}).flatMap(b => b.map(x => x.date))
+  ])].sort();
+
+  if (cmpChart) {
+    cmpChart.data.labels   = allDates;
+    cmpChart.data.datasets = datasets;
+    cmpChart.update('none');
+  } else {
+    const cfg = JSON.parse(JSON.stringify(CHART_DEFAULTS));
+    cfg.scales.x.type = 'category';
+    cfg.scales.y.ticks.callback = v => '$' + (v/1000).toFixed(0) + 'k';
+    cmpChart = new Chart(document.getElementById('cmpChart'), {
+      type: 'line', data: { labels: allDates, datasets }, options: cfg,
+    });
+  }
+}
+
+// ── 持倉表格 ─────────────────────────────────────────────────────
+function updatePositionsTable(positions) {
+  if (!positions) return;
+  document.getElementById('pos-count').textContent = `共 ${positions.length} 檔`;
+
+  const tbody = document.getElementById('pos-tbody');
+  tbody.innerHTML = '';
+
+  positions.forEach(p => {
+    const pnlCls  = cls(p.pnl_amount);
+    const diffW   = (p.weight - p.target_weight).toFixed(1);
+    const diffTag = Math.abs(diffW) > 3
+      ? `<span style="color:var(--yellow);font-size:0.7rem">${sign(parseFloat(diffW))}${diffW}%</span>`
+      : '';
+
+    const wBarPct = Math.min(p.weight, 30) / 30 * 100;
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${p.symbol}</td>
+        <td>${fmt(p.current_price)}</td>
+        <td>${fmt(p.avg_entry_price)}</td>
+        <td>${fmtN(p.qty, 0)}</td>
+        <td>${fmt(p.market_value)}</td>
+        <td>
+          <div class="w-bar">
+            <div class="w-bar-bg"><div class="w-bar-fill" style="width:${wBarPct}%"></div></div>
+            <div class="w-num">${fmtN(p.weight, 1)}%${diffTag}</div>
+          </div>
+        </td>
+        <td style="color:var(--muted)">${p.target_weight}%</td>
+        <td class="${pnlCls}">${sign(p.pnl_amount)}${fmt(p.pnl_amount)}</td>
+        <td class="${pnlCls}">${sign(p.pnl_pct)}${fmtN(p.pnl_pct, 2)}%</td>
+      </tr>`;
+  });
+}
+
+// ── 市值排名圖 ────────────────────────────────────────────────────
+function updateRankChart(positions) {
+  if (!positions || !positions.length) return;
+
+  const sorted = [...positions].sort((a, b) => b.market_value - a.market_value);
+  const labels = sorted.map(p => p.symbol);
+  const values = sorted.map(p => p.market_value);
+  const bgColors = sorted.map(p =>
+    p.pnl_amount >= 0 ? 'rgba(166,227,161,0.7)' : 'rgba(243,139,168,0.7)'
+  );
+
+  if (rankChart) {
+    rankChart.data.labels            = labels;
+    rankChart.data.datasets[0].data  = values;
+    rankChart.data.datasets[0].backgroundColor = bgColors;
+    rankChart.update('none');
+  } else {
+    rankChart = new Chart(document.getElementById('rankChart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: '市值 (USD)',
+          data: values,
+          backgroundColor: bgColors,
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        ...JSON.parse(JSON.stringify(CHART_DEFAULTS)),
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1e1e35',
+            borderColor: '#2a2a4a',
+            borderWidth: 1,
+            callbacks: {
+              label: ctx => ' ' + fmt(ctx.raw),
+            },
+          },
+        },
+        scales: {
+          x: { ticks: { color: COLORS.tick, callback: v => '$' + (v/1000).toFixed(0)+'k', font:{size:10} }, grid: { color: COLORS.grid } },
+          y: { ticks: { color: '#89b4fa', font: { size: 11, weight: '600' } }, grid: { color: COLORS.grid } },
+        },
+      },
+    });
+  }
+}
+
+// ── 交易日誌 ─────────────────────────────────────────────────────
+function updateTradeLog(trades) {
+  if (!trades) return;
+  document.getElementById('trade-count').textContent = `最近 ${trades.length} 筆`;
+
+  const tbody = document.getElementById('trade-tbody');
+  tbody.innerHTML = '';
+
+  trades.forEach(t => {
+    const sideTag = t.side === 'buy'
+      ? `<span class="tag tag-buy">買入</span>`
+      : `<span class="tag tag-sell">賣出</span>`;
+    const statusMap = {
+      filled: '<span class="tag tag-ok">已成交</span>',
+      partially_filled: '<span class="tag tag-pend">部分成交</span>',
+      new:       '<span class="tag tag-pend">新建</span>',
+      submitted: '<span class="tag tag-pend">委託中</span>',
+      canceled:  '<span class="tag" style="color:var(--muted)">已取消</span>',
+    };
+    const stTag = statusMap[t.status] || `<span class="tag">${t.status}</span>`;
+
+    tbody.innerHTML += `
+      <tr>
+        <td style="text-align:left;color:var(--muted);font-size:0.75rem">${t.time}</td>
+        <td style="text-align:left;color:var(--blue);font-weight:700">${t.symbol}</td>
+        <td style="text-align:left">${sideTag}</td>
+        <td>${fmtN(t.qty, 0)}</td>
+        <td>${fmtN(t.filled_qty, 0)}</td>
+        <td>${t.price ? fmt(t.price) : '—'}</td>
+        <td style="text-align:left">${stTag}</td>
+      </tr>`;
+  });
+}
+
+// ── 主更新函式 ────────────────────────────────────────────────────
+function applyData(data) {
+  const snap = data.snapshot || {};
+
+  updateKPIs(snap);
+  updateNavChart(data.nav_history);
+  updateCmpChart(data.nav_history, data.benchmark);
+  updatePositionsTable(snap.positions);
+  updateRankChart(snap.positions);
+  updateTradeLog(snap.recent_trades);
+
+  const ts = (data.last_updated || '').replace('T', ' ').substring(0, 19);
+  document.getElementById('last-update').textContent = `更新：${ts}`;
+  document.getElementById('loading').style.display = 'none';
+}
+
+// ── API 呼叫 ──────────────────────────────────────────────────────
+async function fetchData() {
+  try {
+    const r = await fetch('/api/data');
+    const d = await r.json();
+    applyData(d);
+  } catch (e) {
+    document.getElementById('last-update').textContent = '連線失敗，請確認 portfolio.py 正在執行';
+    document.getElementById('status-dot').style.background = '#f38ba8';
+    document.getElementById('loading').style.display = 'none';
+  }
+}
+
+async function refreshData() {
+  document.getElementById('last-update').textContent = '更新中...';
+  try {
+    const r = await fetch('/api/refresh');
+    const d = await r.json();
+    applyData(d);
+  } catch(e) {
+    document.getElementById('last-update').textContent = '連線失敗';
+  }
+}
+
+async function triggerRebalance() {
+  if (!confirm('確定要執行再平衡？這將會在 Alpaca 帳戶中下單。')) return;
+  document.getElementById('last-update').textContent = '再平衡中...';
+  try {
+    const r = await fetch('/api/rebalance');
+    const d = await r.json();
+    applyData(d);
+    alert('再平衡完成！');
+  } catch(e) {
+    alert('再平衡失敗：' + e.message);
+  }
+}
+
+// ── 初始化 ────────────────────────────────────────────────────────
+fetchData();
+// 每 60 秒自動刷新
+refreshTimer = setInterval(fetchData, 60000);
+</script>
+</body>
+</html>
