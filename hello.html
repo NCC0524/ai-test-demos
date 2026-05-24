@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Python Hello 測試</title>
+  <script src="https://cdn.jsdelivr.net/npm/brython@3.12.3/brython.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      background: #313244;
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #89dceb;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .code-block {
+      background: #1e1e2e;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border-left: 3px solid #89b4fa;
+    }
+    .code-block pre {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem;
+      color: #a6e3a1;
+      line-height: 1.6;
+    }
+    .label {
+      font-size: 0.75rem;
+      color: #6c7086;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .output-block {
+      background: #1e1e2e;
+      border-radius: 8px;
+      padding: 1rem;
+      border-left: 3px solid #a6e3a1;
+      min-height: 80px;
+    }
+    #output {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem;
+      white-space: pre;
+      line-height: 1.8;
+      color: #cdd6f4;
+    }
+    .status {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: #6c7086;
+      text-align: right;
+    }
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #a6e3a1;
+      margin-right: 4px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body onload="brython()">
+
+<div class="card">
+  <h1>🐍 Python Hello 測試</h1>
+
+  <div class="label">Python 程式碼</div>
+  <div class="code-block">
+    <pre>print("Hello, 世界！")
+print("這是一個 Python 測試程式")
+print("執行成功 ✓")</pre>
+  </div>
+
+  <div class="label">執行結果</div>
+  <div class="output-block">
+    <div id="output"><span class="dot"></span>載入中...</div>
+  </div>
+
+  <div class="status" id="status">Brython 3.12 · 瀏覽器直譯器</div>
+</div>
+
+<script type="text/python">
+from browser import document
+import sys
+from io import StringIO
+
+# 攔截 print 輸出
+old_stdout = sys.stdout
+sys.stdout = buffer = StringIO()
+
+# 執行 Python 程式
+print("Hello, 世界！")
+print("這是一個 Python 測試程式")
+print("執行成功 ✓")
+
+# 取回輸出
+sys.stdout = old_stdout
+result = buffer.getvalue()
+
+# 顯示到頁面
+document["output"].text = result
+document["status"].text = "✓ 執行完畢 · Brython 3.12 · 瀏覽器直譯器"
+document["status"].style.color = "#a6e3a1"
+</script>
+
+</body>
+</html>

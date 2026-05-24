@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>九九乘法表</title>
+  <script src="https://cdn.jsdelivr.net/npm/brython@3.12.3/brython.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      color: #89dceb;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      text-align: center;
+      color: #6c7086;
+      font-size: 0.85rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Python 程式碼區塊 */
+    .code-section {
+      max-width: 700px;
+      margin: 0 auto 2rem;
+      background: #313244;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .code-header {
+      background: #45475a;
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+      color: #a6adc8;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .code-header span { color: #89b4fa; font-weight: bold; }
+    pre {
+      padding: 1.2rem;
+      font-family: 'Consolas', monospace;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89b4fa; }
+    .num { color: #fab387; }
+    .str { color: #a6e3a1; }
+    .cm  { color: #6c7086; font-style: italic; }
+
+    /* 乘法表格 */
+    .table-section {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #313244;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .table-header {
+      background: #45475a;
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+      color: #a6adc8;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .table-header span { color: #a6e3a1; font-weight: bold; }
+    .table-wrapper {
+      padding: 1.2rem;
+      overflow-x: auto;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th {
+      background: #45475a;
+      color: #89dceb;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      text-align: center;
+      font-weight: 600;
+    }
+    td {
+      padding: 5px 8px;
+      font-size: 0.82rem;
+      font-family: 'Consolas', monospace;
+      text-align: right;
+      border: 1px solid #45475a;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    td:hover { background: #45475a; cursor: default; }
+    tr:nth-child(odd) td  { background: #2a2a3e; }
+    tr:nth-child(even) td { background: #252535; }
+    tr:nth-child(odd) td:hover  { background: #45475a; }
+    tr:nth-child(even) td:hover { background: #45475a; }
+
+    .status-bar {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.78rem;
+      color: #6c7086;
+    }
+    .status-bar.done { color: #a6e3a1; }
+  </style>
+</head>
+<body onload="brython()">
+
+  <h1>🐍 九九乘法表</h1>
+  <p class="subtitle">Python 程式碼 · Brython 瀏覽器直譯器</p>
+
+  <!-- Python 程式碼展示 -->
+  <div class="code-section">
+    <div class="code-header">🐍 <span>multiplication.py</span></div>
+    <pre><span class="cm"># 九九乘法表</span>
+<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="num">10</span>):
+    <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="num">10</span>):
+        <span class="fn">print</span>(<span class="str">f"</span>{i}<span class="str"> x </span>{j}<span class="str"> = </span>{i*j:<span class="num">2</span>}<span class="str">"</span>, end=<span class="str">"  "</span>)
+    <span class="fn">print</span>()</pre>
+  </div>
+
+  <!-- 乘法表輸出 -->
+  <div class="table-section">
+    <div class="table-header">📊 <span>執行結果</span></div>
+    <div class="table-wrapper">
+      <table id="mult-table"></table>
+    </div>
+  </div>
+
+  <div class="status-bar" id="status">⏳ 執行中...</div>
+
+<script type="text/python">
+from browser import document, html
+
+table = document["mult-table"]
+
+# 標題列
+header_row = html.TR()
+header_row <= html.TH("×")
+for j in range(1, 10):
+    header_row <= html.TH(str(j))
+table <= header_row
+
+# 資料列
+for i in range(1, 10):
+    row = html.TR()
+    # 列標題
+    th = html.TH(str(i))
+    row <= th
+    for j in range(1, 10):
+        result = i * j
+        td = html.TD(f"{i}×{j}={result}")
+        # 對角線標色
+        if i == j:
+            td.style.color = "#fab387"
+            td.style.fontWeight = "bold"
+        elif i * j >= 50:
+            td.style.color = "#cba6f7"
+        elif i * j >= 25:
+            td.style.color = "#89b4fa"
+        else:
+            td.style.color = "#a6e3a1"
+        row <= td
+    table <= row
+
+status = document["status"]
+status.text = "✓ 執行完畢 · 共 81 組算式 · Brython 3.12"
+status.className = "status-bar done"
+</script>
+
+</body>
+</html>

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>元素週期表</title>
+  <script src="https://cdn.jsdelivr.net/npm/brython@3.12.3/brython.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0f0f1a;
+      color: #cdd6f4;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.6rem;
+      color: #89dceb;
+      margin-bottom: 0.3rem;
+      letter-spacing: 0.05em;
+    }
+    .subtitle {
+      text-align: center;
+      color: #6c7086;
+      font-size: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* 圖例 */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1.2rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.72rem;
+      color: #a6adc8;
+    }
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 3px;
+    }
+
+    /* 週期表格 */
+    #periodic-table {
+      display: grid;
+      grid-template-columns: repeat(18, minmax(58px, 1fr));
+      gap: 3px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .element {
+      border-radius: 6px;
+      padding: 4px 3px;
+      text-align: center;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      position: relative;
+      min-height: 62px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .element:hover {
+      transform: scale(1.12);
+      z-index: 10;
+      border-color: rgba(255,255,255,0.5);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    }
+    .element .num {
+      font-size: 0.6rem;
+      color: rgba(255,255,255,0.6);
+      line-height: 1;
+    }
+    .element .sym {
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #fff;
+    }
+    .element .zh {
+      font-size: 0.58rem;
+      color: rgba(255,255,255,0.85);
+      line-height: 1.2;
+    }
+    .element .wt {
+      font-size: 0.55rem;
+      color: rgba(255,255,255,0.5);
+      line-height: 1;
+    }
+    .empty { background: transparent; border: none; }
+    .period-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: #6c7086;
+      font-weight: bold;
+    }
+
+    /* 詳細資訊面板 */
+    #info-panel {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #1e1e2e;
+      border: 1px solid #45475a;
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      min-width: 220px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 100;
+    }
+    #info-panel .ip-sym {
+      font-size: 2.5rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+    #info-panel .ip-name {
+      font-size: 1rem;
+      color: #a6adc8;
+      margin: 0.2rem 0 0.8rem;
+    }
+    #info-panel table { width: 100%; font-size: 0.8rem; }
+    #info-panel td { padding: 2px 4px; color: #cdd6f4; }
+    #info-panel td:first-child { color: #6c7086; width: 60%; }
+
+    .status-bar {
+      text-align: center;
+      margin-top: 1.2rem;
+      font-size: 0.75rem;
+      color: #6c7086;
+    }
+    .status-bar.done { color: #a6e3a1; }
+  </style>
+</head>
+<body onload="brython()">
+
+  <h1>⚗️ 元素週期表</h1>
+  <p class="subtitle">118 種元素 · 點擊查看詳細資訊 · Brython 3.12</p>
+
+  <div class="legend" id="legend"></div>
+  <div id="periodic-table"></div>
+  <div class="status-bar" id="status">⏳ 載入中...</div>
+  <div id="info-panel"></div>
+
+<script type="text/python">
+from browser import document, html
+
+# 類別顏色
+CATEGORY_COLORS = {
+    "alkali":      "#c0392b",   # 鹼金屬
+    "alkaline":    "#e67e22",   # 鹼土金屬
+    "transition":  "#2980b9",   # 過渡金屬
+    "post":        "#27ae60",   # 後過渡金屬
+    "metalloid":   "#16a085",   # 類金屬
+    "nonmetal":    "#8e44ad",   # 非金屬
+    "halogen":     "#6c3483",   # 鹵素
+    "noble":       "#1a5276",   # 惰性氣體
+    "lanthanide":  "#117a65",   # 鑭系元素
+    "actinide":    "#6e2f1a",   # 錒系元素
+}
+
+CATEGORY_ZH = {
+    "alkali":     "鹼金屬",
+    "alkaline":   "鹼土金屬",
+    "transition": "過渡金屬",
+    "post":       "後過渡金屬",
+    "metalloid":  "類金屬",
+    "nonmetal":   "非金屬",
+    "halogen":    "鹵素",
+    "noble":      "惰性氣體",
+    "lanthanide": "鑭系元素",
+    "actinide":   "錒系元素",
+}
+
+# (原子序, 符號, 中文名, 英文名, 原子量, 類別, 週期, 族)
+ELEMENTS = [
+    (1,  "H",  "氫",  "Hydrogen",      1.008,   "nonmetal",   1, 1),
+    (2,  "He", "氦",  "Helium",        4.003,   "noble",      1, 18),
+    (3,  "Li", "鋰",  "Lithium",       6.941,   "alkali",     2, 1),
+    (4,  "Be", "鈹",  "Beryllium",     9.012,   "alkaline",   2, 2),
+    (5,  "B",  "硼",  "Boron",        10.811,   "metalloid",  2, 13),
+    (6,  "C",  "碳",  "Carbon",       12.011,   "nonmetal",   2, 14),
+    (7,  "N",  "氮",  "Nitrogen",     14.007,   "nonmetal",   2, 15),
+    (8,  "O",  "氧",  "Oxygen",       15.999,   "nonmetal",   2, 16),
+    (9,  "F",  "氟",  "Fluorine",     18.998,   "halogen",    2, 17),
+    (10, "Ne", "氖",  "Neon",         20.180,   "noble",      2, 18),
+    (11, "Na", "鈉",  "Sodium",       22.990,   "alkali",     3, 1),
+    (12, "Mg", "鎂",  "Magnesium",    24.305,   "alkaline",   3, 2),
+    (13, "Al", "鋁",  "Aluminum",     26.982,   "post",       3, 13),
+    (14, "Si", "矽",  "Silicon",      28.086,   "metalloid",  3, 14),
+    (15, "P",  "磷",  "Phosphorus",   30.974,   "nonmetal",   3, 15),
+    (16, "S",  "硫",  "Sulfur",       32.065,   "nonmetal",   3, 16),
+    (17, "Cl", "氯",  "Chlorine",     35.453,   "halogen",    3, 17),
+    (18, "Ar", "氬",  "Argon",        39.948,   "noble",      3, 18),
+    (19, "K",  "鉀",  "Potassium",    39.098,   "alkali",     4, 1),
+    (20, "Ca", "鈣",  "Calcium",      40.078,   "alkaline",   4, 2),
+    (21, "Sc", "鈧",  "Scandium",     44.956,   "transition", 4, 3),
+    (22, "Ti", "鈦",  "Titanium",     47.867,   "transition", 4, 4),
+    (23, "V",  "釩",  "Vanadium",     50.942,   "transition", 4, 5),
+    (24, "Cr", "鉻",  "Chromium",     51.996,   "transition", 4, 6),
+    (25, "Mn", "錳",  "Manganese",    54.938,   "transition", 4, 7),
+    (26, "Fe", "鐵",  "Iron",         55.845,   "transition", 4, 8),
+    (27, "Co", "鈷",  "Cobalt",       58.933,   "transition", 4, 9),
+    (28, "Ni", "鎳",  "Nickel",       58.693,   "transition", 4, 10),
+    (29, "Cu", "銅",  "Copper",       63.546,   "transition", 4, 11),
+    (30, "Zn", "鋅",  "Zinc",         65.38,    "transition", 4, 12),
+    (31, "Ga", "鎵",  "Gallium",      69.723,   "post",       4, 13),
+    (32, "Ge", "鍺",  "Germanium",    72.630,   "metalloid",  4, 14),
+    (33, "As", "砷",  "Arsenic",      74.922,   "metalloid",  4, 15),
+    (34, "Se", "硒",  "Selenium",     78.971,   "nonmetal",   4, 16),
+    (35, "Br", "溴",  "Bromine",      79.904,   "halogen",    4, 17),
+    (36, "Kr", "氪",  "Krypton",      83.798,   "noble",      4, 18),
+    (37, "Rb", "銣",  "Rubidium",     85.468,   "alkali",     5, 1),
+    (38, "Sr", "鍶",  "Strontium",    87.620,   "alkaline",   5, 2),
+    (39, "Y",  "釔",  "Yttrium",      88.906,   "transition", 5, 3),
+    (40, "Zr", "鋯",  "Zirconium",    91.224,   "transition", 5, 4),
+    (41, "Nb", "鈮",  "Niobium",      92.906,   "transition", 5, 5),
+    (42, "Mo", "鉬",  "Molybdenum",   95.960,   "transition", 5, 6),
+    (43, "Tc", "鍀",  "Technetium",   98.000,   "transition", 5, 7),
+    (44, "Ru", "釕",  "Ruthenium",   101.070,   "transition", 5, 8),
+    (45, "Rh", "銠",  "Rhodium",     102.906,   "transition", 5, 9),
+    (46, "Pd", "鈀",  "Palladium",   106.420,   "transition", 5, 10),
+    (47, "Ag", "銀",  "Silver",      107.868,   "transition", 5, 11),
+    (48, "Cd", "鎘",  "Cadmium",     112.411,   "transition", 5, 12),
+    (49, "In", "銦",  "Indium",      114.818,   "post",       5, 13),
+    (50, "Sn", "錫",  "Tin",         118.710,   "post",       5, 14),
+    (51, "Sb", "銻",  "Antimony",    121.760,   "metalloid",  5, 15),
+    (52, "Te", "碲",  "Tellurium",   127.600,   "metalloid",  5, 16),
+    (53, "I",  "碘",  "Iodine",      126.904,   "halogen",    5, 17),
+    (54, "Xe", "氙",  "Xenon",       131.293,   "noble",      5, 18),
+    (55, "Cs", "銫",  "Cesium",      132.905,   "alkali",     6, 1),
+    (56, "Ba", "鋇",  "Barium",      137.327,   "alkaline",   6, 2),
+    (57, "La", "鑭",  "Lanthanum",   138.905,   "lanthanide", 6, 3),
+    (72, "Hf", "鉿",  "Hafnium",     178.490,   "transition", 6, 4),
+    (73, "Ta", "鉭",  "Tantalum",    180.948,   "transition", 6, 5),
+    (74, "W",  "鎢",  "Tungsten",    183.840,   "transition", 6, 6),
+    (75, "Re", "錸",  "Rhenium",     186.207,   "transition", 6, 7),
+    (76, "Os", "鋨",  "Osmium",      190.230,   "transition", 6, 8),
+    (77, "Ir", "銥",  "Iridium",     192.217,   "transition", 6, 9),
+    (78, "Pt", "鉑",  "Platinum",    195.084,   "transition", 6, 10),
+    (79, "Au", "金",  "Gold",        196.967,   "transition", 6, 11),
+    (80, "Hg", "汞",  "Mercury",     200.592,   "transition", 6, 12),
+    (81, "Tl", "鉈",  "Thallium",    204.383,   "post",       6, 13),
+    (82, "Pb", "鉛",  "Lead",        207.200,   "post",       6, 14),
+    (83, "Bi", "鉍",  "Bismuth",     208.980,   "post",       6, 15),
+    (84, "Po", "釙",  "Polonium",    209.000,   "post",       6, 16),
+    (85, "At", "砈",  "Astatine",    210.000,   "halogen",    6, 17),
+    (86, "Rn", "氡",  "Radon",       222.000,   "noble",      6, 18),
+    (87, "Fr", "鍅",  "Francium",    223.000,   "alkali",     7, 1),
+    (88, "Ra", "鐳",  "Radium",      226.000,   "alkaline",   7, 2),
+    (89, "Ac", "錒",  "Actinium",    227.000,   "actinide",   7, 3),
+    (104,"Rf", "𨧀", "Rutherfordium",267.000,  "transition", 7, 4),
+    (105,"Db", "𨧁", "Dubnium",     268.000,   "transition", 7, 5),
+    (106,"Sg", "𨭎", "Seaborgium",  271.000,   "transition", 7, 6),
+    (107,"Bh", "𨨏", "Bohrium",     270.000,   "transition", 7, 7),
+    (108,"Hs", "鏷",  "Hassium",     277.000,   "transition", 7, 8),
+    (118,"Og", "鿫",  "Oganesson",   294.000,   "noble",      7, 18),
+    # 鑭系
+    (58, "Ce", "鈰",  "Cerium",      140.116,   "lanthanide", 9, 4),
+    (59, "Pr", "鐠",  "Praseodymium",140.908,   "lanthanide", 9, 5),
+    (60, "Nd", "釹",  "Neodymium",   144.242,   "lanthanide", 9, 6),
+    (61, "Pm", "鉕",  "Promethium",  145.000,   "lanthanide", 9, 7),
+    (62, "Sm", "釤",  "Samarium",    150.360,   "lanthanide", 9, 8),
+    (63, "Eu", "銪",  "Europium",    151.964,   "lanthanide", 9, 9),
+    (64, "Gd", "釓",  "Gadolinium",  157.250,   "lanthanide", 9, 10),
+    (65, "Tb", "鋱",  "Terbium",     158.925,   "lanthanide", 9, 11),
+    (66, "Dy", "鏑",  "Dysprosium",  162.500,   "lanthanide", 9, 12),
+    (67, "Ho", "鈥",  "Holmium",     164.930,   "lanthanide", 9, 13),
+    (68, "Er", "鉺",  "Erbium",      167.259,   "lanthanide", 9, 14),
+    (69, "Tm", "銩",  "Thulium",     168.934,   "lanthanide", 9, 15),
+    (70, "Yb", "鐿",  "Ytterbium",   173.045,   "lanthanide", 9, 16),
+    (71, "Lu", "鎦",  "Lutetium",    174.967,   "lanthanide", 9, 17),
+    # 錒系
+    (90, "Th", "釷",  "Thorium",     232.038,   "actinide",   10, 4),
+    (91, "Pa", "鏷",  "Protactinium",231.036,   "actinide",   10, 5),
+    (92, "U",  "鈾",  "Uranium",     238.029,   "actinide",   10, 6),
+    (93, "Np", "錼",  "Neptunium",   237.000,   "actinide",   10, 7),
+    (94, "Pu", "鈽",  "Plutonium",   244.000,   "actinide",   10, 8),
+    (95, "Am", "鋂",  "Americium",   243.000,   "actinide",   10, 9),
+    (96, "Cm", "鋦",  "Curium",      247.000,   "actinide",   10, 10),
+    (97, "Bk", "錇",  "Berkelium",   247.000,   "actinide",   10, 11),
+    (98, "Cf", "鐦",  "Californium", 251.000,   "actinide",   10, 12),
+    (99, "Es", "鑀",  "Einsteinium", 252.000,   "actinide",   10, 13),
+    (100,"Fm", "鐨",  "Fermium",     257.000,   "actinide",   10, 14),
+    (101,"Md", "鍆",  "Mendelevium", 258.000,   "actinide",   10, 15),
+    (102,"No", "鍩",  "Nobelium",    259.000,   "actinide",   10, 16),
+    (103,"Lr", "鐒",  "Lawrencium",  266.000,   "actinide",   10, 17),
+]
+
+# 建立格子 dict：(row, col) -> element
+grid = {}
+for e in ELEMENTS:
+    num, sym, zh, en, wt, cat, period, group = e
+    row = period
+    col = group
+    grid[(row, col)] = e
+
+# 建立圖例
+legend_div = document["legend"]
+for cat, color in CATEGORY_COLORS.items():
+    item = html.DIV(Class="legend-item")
+    dot = html.DIV(Class="legend-dot")
+    dot.style.background = color
+    item <= dot
+    item <= html.SPAN(CATEGORY_ZH[cat])
+    legend_div <= item
+
+# 建立週期表
+table_div = document["periodic-table"]
+
+# 共 10 列（1-7 主表 + 空行 + 9-10 鑭錒系）
+# 用 CSS grid，row 1-7 正常，row 8 空，row 9-10 鑭錒系
+# 每列 18 格
+
+# 格子填充函式
+def make_element_cell(e):
+    num, sym, zh, en, wt, cat, period, group = e
+    color = CATEGORY_COLORS[cat]
+    div = html.DIV(Class="element")
+    div.style.background = color + "cc"
+    div.style.borderColor = color
+
+    n = html.DIV(str(num), Class="num")
+    s = html.DIV(sym, Class="sym")
+    z = html.DIV(zh, Class="zh")
+    w = html.DIV(f"{wt:.3f}", Class="wt")
+    div <= n
+    div <= s
+    div <= z
+    div <= w
+
+    # 點擊顯示詳細資訊
+    def show_info(ev, elem=e):
+        n2, s2, z2, e2, w2, c2, p2, g2 = elem
+        panel = document["info-panel"]
+        panel.clear()
+        sym_div = html.DIV(s2, Class="ip-sym")
+        sym_div.style.color = CATEGORY_COLORS[c2]
+        panel <= sym_div
+        panel <= html.DIV(f"{z2} · {e2}", Class="ip-name")
+        t = html.TABLE()
+        rows_data = [
+            ("原子序", str(n2)),
+            ("原子量", f"{w2:.4f}"),
+            ("類別", CATEGORY_ZH[c2]),
+            ("週期", str(p2)),
+            ("族", str(g2)),
+        ]
+        for label, val in rows_data:
+            tr = html.TR()
+            tr <= html.TD(label)
+            tr <= html.TD(val)
+            t <= tr
+        panel <= t
+        panel.style.display = "block"
+        panel.style.borderColor = CATEGORY_COLORS[c2]
+
+    div.bind("click", show_info)
+    return div
+
+def make_empty():
+    d = html.DIV(Class="element empty")
+    return d
+
+# 渲染主表 row 1-7
+for row in range(1, 8):
+    for col in range(1, 19):
+        if (row, col) in grid:
+            table_div <= make_element_cell(grid[(row, col)])
+        else:
+            table_div <= make_empty()
+
+# 空白分隔列
+for col in range(1, 19):
+    table_div <= make_empty()
+
+# 鑭系標籤列 (row 9)
+for col in range(1, 19):
+    if col == 1:
+        lbl = html.DIV("鑭系", Class="element period-label")
+        lbl.style.color = CATEGORY_COLORS["lanthanide"]
+        lbl.style.fontSize = "0.7rem"
+        table_div <= lbl
+    elif col == 2:
+        table_div <= make_empty()
+    elif col == 3:
+        table_div <= make_empty()
+    elif (9, col) in grid:
+        table_div <= make_element_cell(grid[(9, col)])
+    else:
+        table_div <= make_empty()
+
+# 錒系標籤列 (row 10)
+for col in range(1, 19):
+    if col == 1:
+        lbl = html.DIV("錒系", Class="element period-label")
+        lbl.style.color = CATEGORY_COLORS["actinide"]
+        lbl.style.fontSize = "0.7rem"
+        table_div <= lbl
+    elif col == 2:
+        table_div <= make_empty()
+    elif col == 3:
+        table_div <= make_empty()
+    elif (10, col) in grid:
+        table_div <= make_element_cell(grid[(10, col)])
+    else:
+        table_div <= make_empty()
+
+# 關閉面板
+def close_panel(ev):
+    panel = document["info-panel"]
+    if ev.target.closest("#info-panel") is None and not ev.target.classList.contains("element"):
+        panel.style.display = "none"
+
+document.bind("click", close_panel)
+
+# 完成
+status = document["status"]
+status.text = f"✓ 共 {len(ELEMENTS)} 種元素 · 點擊元素查看詳細資訊 · Brython 3.12"
+status.className = "status-bar done"
+</script>
+
+</body>
+</html>
